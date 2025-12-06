@@ -4,31 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>物件検索 | プレミアムビュー</title>
+    <title>物件検索 | Premium View</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@400;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@400;600;700&display=swap"
         rel="stylesheet">
     <style>
         :root {
             --primary: #2563eb;
             --primary-dark: #1d4ed8;
+            --primary-light: #dbeafe;
             --bg: #f8fafc;
             --surface: #ffffff;
-            --text-main: #1e293b;
+            --text-main: #0f172a;
             --text-sub: #64748b;
             --border: #e2e8f0;
             --accent: #f59e0b;
             --danger: #ef4444;
             --success: #10b981;
-            --radius: 12px;
+            --radius: 16px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
 
         * {
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -37,18 +40,39 @@
             color: var(--text-main);
             margin: 0;
             padding: 0;
-            line-height: 1.5;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
 
         /* Layout */
         .app-container {
-            display: grid;
-            grid-template-columns: 300px 1fr;
+            display: flex;
             min-height: 100vh;
+        }
+
+        /* Mobile Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
         }
 
         /* Sidebar */
         .sidebar {
+            width: 320px;
             background: var(--surface);
             border-right: 1px solid var(--border);
             padding: 2rem;
@@ -59,123 +83,236 @@
             display: flex;
             flex-direction: column;
             gap: 2rem;
+            flex-shrink: 0;
+            z-index: 50;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .logo {
             font-size: 1.5rem;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--primary);
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            letter-spacing: -0.02em;
         }
 
         .filter-section h3 {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.1em;
             color: var(--text-sub);
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
         }
 
         .filter-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
         }
 
         .filter-group label {
-            display: block;
-            font-size: 0.9rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--text-main);
+        }
+
+        .filter-value {
+            color: var(--primary);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
         }
 
         input[type=range] {
             width: 100%;
-            accent-color: var(--primary);
-            cursor: pointer;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
         }
 
-        .toggle-container {
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--surface);
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.1);
+        }
+
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-top: 0.5rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Checkboxes */
+        #station-checkboxes {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem;
+            background: #f8fafc;
+        }
+
+        #station-checkboxes label {
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background 0.2s;
+            font-weight: 500;
+        }
+
+        #station-checkboxes label:hover {
+            background: white;
+        }
+
+        input[type=checkbox] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            padding: 0.5rem 0;
         }
 
         .toggle-switch {
             position: relative;
-            width: 44px;
-            height: 24px;
+            width: 48px;
+            height: 26px;
             background: var(--border);
-            border-radius: 24px;
+            border-radius: 13px;
             transition: 0.3s;
         }
 
         .toggle-switch::after {
             content: '';
             position: absolute;
-            top: 2px;
-            left: 2px;
+            top: 3px;
+            left: 3px;
             width: 20px;
             height: 20px;
             background: white;
             border-radius: 50%;
-            transition: 0.3s;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
-        input[type=checkbox]:checked+.toggle-switch {
+        .toggle-container input[type=checkbox] {
+            display: none;
+        }
+
+        .toggle-container input[type=checkbox]:checked+.toggle-switch {
             background: var(--primary);
         }
 
-        input[type=checkbox]:checked+.toggle-switch::after {
-            transform: translateX(20px);
-        }
-
-        input[type=checkbox] {
-            display: none;
+        .toggle-container input[type=checkbox]:checked+.toggle-switch::after {
+            transform: translateX(22px);
         }
 
         /* Main Content */
         .main-content {
-            padding: 2rem;
+            flex: 1;
+            padding: 2rem 3rem;
+            height: 100vh;
             overflow-y: auto;
+            scroll-behavior: smooth;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-end;
             margin-bottom: 2rem;
+            padding-top: 3.5rem;
+            /* Space for fixed sort button */
+            position: relative;
         }
 
-        .sort-select {
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--surface);
-            font-family: inherit;
-            color: var(--text-main);
-            cursor: pointer;
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: none;
+            /* Hidden on desktop */
         }
 
         .stats {
-            font-size: 0.9rem;
+            font-size: 1rem;
             color: var(--text-sub);
         }
 
         .stats strong {
             color: var(--text-main);
             font-weight: 700;
+            font-size: 1.25rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .sort-select {
+            position: fixed;
+            top: 1rem;
+            right: 1.5rem;
+            z-index: 40;
+            padding: 0.6rem 1.2rem;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            appearance: none;
+            /* Custom Arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.8rem center;
+            background-size: 1rem;
+            padding-right: 2.2rem;
+            width: auto;
+        }
+
+        .sort-select:hover {
+            border-color: var(--primary);
+            transform: translateY(-1px);
         }
 
         /* Grid */
         .property-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 1.5rem;
+            padding-bottom: 4rem;
         }
 
         /* Card */
@@ -183,18 +320,19 @@
             background: var(--surface);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             position: relative;
             border: 1px solid transparent;
+            height: 100%;
         }
 
         .card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-hover);
-            border-color: var(--primary);
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-light);
         }
 
         .card-status {
@@ -203,11 +341,12 @@
             right: 12px;
             padding: 4px 10px;
             border-radius: 20px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             z-index: 10;
+            box-shadow: var(--shadow-sm);
         }
 
         .status-active {
@@ -220,14 +359,20 @@
             color: #991b1b;
         }
 
-        .status-new {
-            background: #dbeafe;
-            color: #1e40af;
+        .card-body {
+            padding: 1rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
-        .card-body {
-            padding: 1.5rem;
-            flex: 1;
+        .card-source {
+            font-size: 0.7rem;
+            color: var(--primary);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
         }
 
         .card-title {
@@ -235,6 +380,7 @@
             font-weight: 700;
             margin: 0 0 0.5rem 0;
             line-height: 1.4;
+            color: var(--text-main);
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -242,58 +388,75 @@
         }
 
         .price-section {
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             display: flex;
             align-items: baseline;
             gap: 0.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
         }
 
         .total-price {
             font-size: 1.5rem;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--primary);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .price-unit {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
         }
 
         .price-breakdown {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-sub);
+            margin-left: auto;
         }
 
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
         }
 
         .info-item {
             display: flex;
             flex-direction: column;
+            background: #f8fafc;
+            padding: 0.5rem;
+            border-radius: 6px;
         }
 
         .info-label {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: var(--text-sub);
             margin-bottom: 2px;
+            font-weight: 600;
         }
 
         .info-value {
-            font-size: 0.95rem;
-            font-weight: 500;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
         }
 
         .address {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-sub);
             display: flex;
             align-items: center;
             gap: 4px;
             margin-top: auto;
+            padding-top: 0.5rem;
         }
 
         .card-footer {
-            padding: 1rem 1.5rem;
-            background: #f1f5f9;
+            padding: 0.75rem 1rem;
+            background: #f8fafc;
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
@@ -303,34 +466,92 @@
         .last-updated {
             font-size: 0.75rem;
             color: var(--text-sub);
+            font-weight: 500;
         }
 
         .btn-link {
             background: var(--text-main);
             color: white;
             text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
+            padding: 0.6rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
             font-weight: 600;
             transition: 0.2s;
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-link:hover {
             background: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        /* Mobile Filter Button */
+        .mobile-filter-btn {
+            display: none;
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--primary);
+            color: white;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            box-shadow: var(--shadow-lg);
+            border: none;
+            z-index: 100;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: transform 0.2s;
+        }
+
+        .mobile-filter-btn:active {
+            transform: scale(0.95);
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
-            .app-container {
-                grid-template-columns: 1fr;
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                transform: translateX(-100%);
+                box-shadow: var(--shadow-lg);
             }
 
-            .sidebar {
-                height: auto;
-                position: static;
-                border-right: none;
-                border-bottom: 1px solid var(--border);
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                padding: 1.5rem;
+                width: 100%;
+            }
+
+            .mobile-filter-btn {
+                display: flex;
+            }
+
+            .page-title {
+                display: block;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .sort-select {
+                width: 100%;
+            }
+
+            .header>div {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
         }
     </style>
@@ -338,8 +559,11 @@
 
 <body>
     <div class="app-container">
+        <!-- Mobile Overlay -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="logo">
                 🏠 不動産ファインダー
             </div>
@@ -350,11 +574,10 @@
                 <div class="filter-group">
                     <label>
                         最大総賃料
-                        <span id="price-val" style="color:var(--primary); font-weight:700;"></span>
+                        <span class="filter-value" id="price-val"></span>
                     </label>
-                    <input type="range" id="price-max" min="0" max="30" step="0.5" value="15">
-                    <div
-                        style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-sub); margin-top:4px;">
+                    <input type="range" id="price-max" min="0" max="30" step="0.5" value="13">
+                    <div class="range-labels">
                         <span>0万円</span>
                         <span>30万円+</span>
                     </div>
@@ -363,11 +586,10 @@
                 <div class="filter-group">
                     <label>
                         最小面積
-                        <span id="area-val" style="color:var(--primary); font-weight:700;"></span>
+                        <span class="filter-value" id="area-val"></span>
                     </label>
                     <input type="range" id="area-min" min="0" max="60" step="1" value="20">
-                    <div
-                        style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-sub); margin-top:4px;">
+                    <div class="range-labels">
                         <span>0m²</span>
                         <span>60m²+</span>
                     </div>
@@ -376,23 +598,20 @@
                 <div class="filter-group">
                     <label>
                         駅徒歩（最大）
-                        <span id="walk-val" style="color:var(--primary); font-weight:700;"></span>
+                        <span class="filter-value" id="walk-val"></span>
                     </label>
-                    <input type="range" id="walk-max" min="1" max="20" step="1" value="10">
-                    <div
-                        style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-sub); margin-top:4px;">
+                    <input type="range" id="walk-max" min="1" max="20" step="1" value="7">
+                    <div class="range-labels">
                         <span>1分</span>
                         <span>20分+</span>
                     </div>
                 </div>
 
                 <div class="filter-group">
-                    <label>駅</label>
-                    <select id="station-select"
-                        style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border);">
-                        <option value="">すべての駅</option>
+                    <label>駅 (複数選択可)</label>
+                    <div id="station-checkboxes">
                         <!-- Populated by JS -->
-                    </select>
+                    </div>
                 </div>
 
                 <div class="filter-group">
@@ -408,8 +627,11 @@
         <!-- Main Content -->
         <main class="main-content">
             <div class="header">
-                <div class="stats">
-                    <strong id="count">0</strong> 件の物件を表示中
+                <div>
+                    <div class="page-title">物件一覧</div>
+                    <div class="stats">
+                        <strong id="count">0</strong> 件
+                    </div>
                 </div>
                 <select id="sort-select" class="sort-select" onchange="filterProperties()">
                     <option value="newest">新着順</option>
@@ -425,23 +647,18 @@
                 <!-- Cards injected via JS -->
             </div>
         </main>
+
+        <!-- Mobile Filter Button -->
+        <button class="mobile-filter-btn" id="mobile-filter-btn">
+            🔍
+        </button>
     </div>
 
     <script>
-        // Data injected by Flask/Jinja2
-        const allProperties = [{"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u6708\u5cf6\u99c5 \u6b6913\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "JPnoie\u9580\u524d\u4ef2\u753a", "total_price": 13.7, "url": "https://suumo.jp/chintai/jnc_000101728841/?bc=100462643918", "walk_minutes": 5, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u6708\u5cf6\u99c5 \u6b6913\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "JPnoie\u9580\u524d\u4ef2\u753a", "total_price": 14.2, "url": "https://suumo.jp/chintai/jnc_000102386381/?bc=100469147728", "walk_minutes": 5, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6928\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.5, "area": 25.33, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.9, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30b7\u30a2\u3000\u30d7\u30ec\u30a4\u30b9\u3000\u6771\u967d\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000101952938/?bc=100468821401", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6928\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.5, "area": 25.59, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 12.0, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30b7\u30a2\u3000\u30d7\u30ec\u30a4\u30b9\u3000\u6771\u967d\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000101186098/?bc=100461127225", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6c34\u5929\u5bae\u524d\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 1.0, "area": 25.66, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.15, "source": "SUUMO", "status": "active", "title": "SYFORME MONZEN-NAKACHO", "total_price": 13.15, "url": "https://suumo.jp/chintai/jnc_000102324194/?bc=100469198510", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6c34\u5929\u5bae\u524d\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 1.0, "area": 28.2, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.4, "source": "SUUMO", "status": "active", "title": "SYFORME MONZEN-NAKACHO", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102799302/?bc=100472566335", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6c34\u5929\u5bae\u524d\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 2.0, "area": 28.2, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "SYFORME MONZEN-NAKACHO", "total_price": 15.0, "url": "https://suumo.jp/chintai/jnc_000100680855/?bc=100468190935", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.2, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102932465/?bc=100476474719", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.3, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000103057491/?bc=100474615774", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.3, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000103294444/?bc=100476486571", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.3, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000103306973/?bc=100476504787", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b696\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u68ee\u4e0b\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6911\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u68ee\u4e0b\uff13", "admin_fee": 0.0, "area": 25.37, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u83ca\u5ddd\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30b7\u30c6\u30a3\u30d5\u30a9\u30ec\u30b9\u30c8\u68ee\u4e0b", "total_price": 12.5, "url": "https://suumo.jp/chintai/jnc_000100496259/?bc=100468564787", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b696\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u68ee\u4e0b\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6911\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u68ee\u4e0b\uff13", "admin_fee": 0.0, "area": 25.37, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u83ca\u5ddd\u99c5", "price": 12.7, "source": "SUUMO", "status": "active", "title": "\u30b7\u30c6\u30a3\u30d5\u30a9\u30ec\u30b9\u30c8\u68ee\u4e0b", "total_price": 12.7, "url": "https://suumo.jp/chintai/jnc_000100496262/?bc=100473686378", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6913\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b6917\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u5e73\u91ce\uff12", "admin_fee": 0.6, "area": 32.3, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6e05\u6f84\u767d\u6cb3\u99c5", "price": 12.0, "source": "SUUMO", "status": "active", "title": "\u30b3\u30b9\u30e2\u30b0\u30e9\u30b7\u30a2\u6e05\u6f84\u767d\u6cb3", "total_price": 12.6, "url": "https://suumo.jp/chintai/jnc_000102679114/?bc=100471753683", "walk_minutes": 6, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.25, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000102853961/?bc=100473442804", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.2, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000100594758/?bc=100452784176", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.25, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 14.0, "url": "https://suumo.jp/chintai/jnc_000101601917/?bc=100462119919", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6915\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 1.5, "area": 25.3, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 11.9, "source": "SUUMO", "status": "active", "title": "\u30af\u30aa\u30ea\u30bf\u30b9\u9580\u524d\u4ef2\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102493229/?bc=100470110799", "walk_minutes": 7, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b693\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u68ee\u4e0b\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u767d\u6cb3\uff12", "admin_fee": 0.5, "area": 27.0, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6e05\u6f84\u767d\u6cb3\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "\u30b3\u30f3\u30dd\u30b8\u30c3\u30c8\u6e05\u6f84\u30a4\u30fc\u30b9\u30c8", "total_price": 13.1, "url": "https://suumo.jp/chintai/jnc_000103324262/?bc=100476530915", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b692\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u68ee\u4e0b\u99c5 \u6b6910\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b6910\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u767d\u6cb3\uff12", "admin_fee": 0.5, "area": 27.0, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6e05\u6f84\u767d\u6cb3\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "\u30b3\u30f3\u30dd\u30b8\u30c3\u30c8\u6e05\u6f84\u30a4\u30fc\u30b9\u30c8", "total_price": 13.1, "url": "https://suumo.jp/chintai/jnc_000103316702/?bc=100476583257", "walk_minutes": 2, "walking_distance_actual": 3.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 0.8, "area": 25.28, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.4, "source": "SUUMO", "status": "active", "title": "CREAL\u9580\u524d\u4ef2\u753aII", "total_price": 13.2, "url": "https://suumo.jp/chintai/jnc_000102914572/?bc=100476305427", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 0.8, "area": 25.36, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "CREAL\u9580\u524d\u4ef2\u753aII", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000101682456/?bc=100462154515", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 1.3, "area": 25.36, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "CREAL\u9580\u524d\u4ef2\u753aII", "total_price": 13.9, "url": "https://suumo.jp/chintai/jnc_000102159495/?bc=100467068858", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b692\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b697\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u767d\u6cb3\uff12", "admin_fee": 0.5, "area": 27.0, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6e05\u6f84\u767d\u6cb3\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda \u6e05\u6f84\u767d\u6cb3\u99c5 4\u968e\u5efa \u7bc93\u5e74", "total_price": 13.1, "url": "https://suumo.jp/chintai/jnc_000103316703/?bc=100476566008", "walk_minutes": 2, "walking_distance_actual": 2.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b699\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff11", "admin_fee": 1.5, "area": 26.35, "last_updated": "2025-12-06 10:59:08", "layout": "2K", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30ec\u30b8\u30c7\u30f3\u30b9\u9580\u524d\u4ef2\u753a\u30b9\u30af\u30a8\u30a2", "total_price": 14.0, "url": "https://suumo.jp/chintai/jnc_000101412419/?bc=100459361092", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b699\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u68ee\u4e0b\u99c5 \u6b6917\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff11", "admin_fee": 1.5, "area": 26.35, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.7, "source": "SUUMO", "status": "active", "title": "\u30ec\u30b8\u30c7\u30f3\u30b9\u9580\u524d\u4ef2\u753a\u30b9\u30af\u30a8\u30a2", "total_price": 14.2, "url": "https://suumo.jp/chintai/jnc_000102056001/?bc=100459774937", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b699\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u68ee\u4e0b\u99c5 \u6b6917\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff11", "admin_fee": 1.5, "area": 26.35, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.9, "source": "SUUMO", "status": "active", "title": "\u30ec\u30b8\u30c7\u30f3\u30b9\u9580\u524d\u4ef2\u753a\u30b9\u30af\u30a8\u30a2", "total_price": 14.4, "url": "https://suumo.jp/chintai/jnc_000101425398/?bc=100461788082", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u65b0\u5bcc\u753a\u99c5 \u6b694\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u65e5\u6bd4\u8c37\u7dda/\u7bc9\u5730\u99c5 \u6b697\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u516b\u4e01\u5800\u99c5 \u6b699\u5206", "address": "\u6771\u4eac\u90fd\u4e2d\u592e\u533a\u6e4a\uff13", "admin_fee": 1.0, "area": 25.0, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u65b0\u5bcc\u753a\u99c5", "price": 12.9, "source": "SUUMO", "status": "active", "title": "\u30af\u30ea\u30a2\u30eb\u65b0\u5bcc\u753a", "total_price": 13.9, "url": "https://suumo.jp/chintai/jnc_000102422882/?bc=100472170690", "walk_minutes": 4, "walking_distance_actual": 4.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda \u9580\u524d\u4ef2\u753a\u99c5 12\u968e\u5efa \u7bc95\u5e74", "total_price": 13.7, "url": "https://suumo.jp/chintai/jnc_000101753288/?bc=100463405840", "walk_minutes": 5, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 0.9, "area": 25.43, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 10.6, "source": "SUUMO", "status": "active", "title": "\u30ac\u30fc\u30e9\u30fb\u30a2\u30f4\u30a7\u30cb\u30e5\u30fc\u6728\u5834", "total_price": 11.5, "url": "https://suumo.jp/chintai/jnc_000103306959/?bc=100476506118", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 0.9, "area": 25.43, "last_updated": "2025-12-06 10:59:08", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "\u30ac\u30fc\u30e9\u30fb\u30a2\u30f4\u30a7\u30cb\u30e5\u30fc\u6728\u5834", "total_price": 12.4, "url": "https://suumo.jp/chintai/jnc_000102777219/?bc=100473692046", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6927\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.0, "area": 25.51, "last_updated": "2025-12-06 10:59:08", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 10.0, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30f3\u30c9\u30fb\u30ac\u30fc\u30e9\u6728\u5834", "total_price": 11.0, "url": "https://suumo.jp/chintai/jnc_000102654802/?bc=100475041167", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6927\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6935\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.0, "area": 25.51, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6771\u967d\u753a\u99c5", "price": 10.0, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30f3\u30c9\u30fb\u30ac\u30fc\u30e9\u6728\u5834", "total_price": 11.0, "url": "https://suumo.jp/chintai/jnc_000103324265/?bc=100475791245", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6927\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6935\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 0.9, "area": 25.51, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6771\u967d\u753a\u99c5", "price": 10.4, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30f3\u30c9\u30fb\u30ac\u30fc\u30e9\u6728\u5834", "total_price": 11.3, "url": "https://suumo.jp/chintai/jnc_000102948114/?bc=100473826565", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.0, "area": 25.76, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.75, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 12.75, "url": "https://suumo.jp/chintai/jnc_000083376058/?bc=100460733317", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6926\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.81, "last_updated": "2025-12-06 10:59:08", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799324/?bc=100472749694", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6926\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799329/?bc=100472580365", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6926\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799328/?bc=100472749675", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6926\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 10:59:08", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799325/?bc=100472518516", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6926\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799326/?bc=100476328002", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 0.9, "area": 25.43, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "\u30ac\u30fc\u30e9\u30fb\u30a2\u30f4\u30a7\u30cb\u30e5\u30fc\u6728\u5834", "total_price": 12.4, "url": "https://suumo.jp/chintai/jnc_000102777219/?bc=100473700204", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u6708\u5cf6\u99c5 \u6b6913\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "JPnoie\u9580\u524d\u4ef2\u753a", "total_price": 13.7, "url": "https://suumo.jp/chintai/jnc_000101728841/?bc=100472670797", "walk_minutes": 5, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u6708\u5cf6\u99c5 \u6b6913\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "JPnoie\u9580\u524d\u4ef2\u753a", "total_price": 14.2, "url": "https://suumo.jp/chintai/jnc_000102386381/?bc=100469145901", "walk_minutes": 5, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6928\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.5, "area": 25.59, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.9, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30b7\u30a2\u3000\u30d7\u30ec\u30a4\u30b9\u3000\u6771\u967d\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000101952938/?bc=100465077182", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 1.0, "area": 25.66, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.15, "source": "SUUMO", "status": "active", "title": "SYFORME\u3000MONZEN-NAKACHO", "total_price": 13.15, "url": "https://suumo.jp/chintai/jnc_000102324194/?bc=100468587113", "walk_minutes": 5, "walking_distance_actual": 1.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 1.0, "area": 28.2, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.4, "source": "SUUMO", "status": "active", "title": "SYFORME\u3000MONZEN-NAKACHO", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102799302/?bc=100472620432", "walk_minutes": 5, "walking_distance_actual": 1.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 2.0, "area": 28.2, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "SYFORME\u3000MONZEN-NAKACHO", "total_price": 15.0, "url": "https://suumo.jp/chintai/jnc_000100680855/?bc=100468280314", "walk_minutes": 5, "walking_distance_actual": 1.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.2, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102932465/?bc=100474063571", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.3, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000103057491/?bc=100474664362", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.3, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000103294444/?bc=100476488231", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u68ee\u4e0b\u99c5 \u6b696\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b697\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u68ee\u4e0b\uff13", "admin_fee": 0.0, "area": 25.37, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u68ee\u4e0b\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30b7\u30c6\u30a3\u30d5\u30a9\u30ec\u30b9\u30c8\u68ee\u4e0b", "total_price": 12.5, "url": "https://suumo.jp/chintai/jnc_000100496259/?bc=100459907615", "walk_minutes": 6, "walking_distance_actual": 6.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u68ee\u4e0b\u99c5 \u6b696\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b697\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u68ee\u4e0b\uff13", "admin_fee": 0.0, "area": 25.37, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u68ee\u4e0b\u99c5", "price": 12.7, "source": "SUUMO", "status": "active", "title": "\u30b7\u30c6\u30a3\u30d5\u30a9\u30ec\u30b9\u30c8\u68ee\u4e0b", "total_price": 12.7, "url": "https://suumo.jp/chintai/jnc_000100496262/?bc=100466140395", "walk_minutes": 6, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b697\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.25, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000102853961/?bc=100476327852", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b697\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.2, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000100594758/?bc=100471114629", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b697\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.25, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 14.0, "url": "https://suumo.jp/chintai/jnc_000101601917/?bc=100461272174", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6915\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 1.5, "area": 25.3, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 11.9, "source": "SUUMO", "status": "active", "title": "\u30af\u30aa\u30ea\u30bf\u30b9\u9580\u524d\u4ef2\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102493229/?bc=100470109385", "walk_minutes": 7, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b693\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u68ee\u4e0b\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u767d\u6cb3\uff12", "admin_fee": 0.5, "area": 27.0, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6e05\u6f84\u767d\u6cb3\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "\u30b3\u30f3\u30dd\u30b8\u30c3\u30c8\u6e05\u6f84\u30a4\u30fc\u30b9\u30c8", "total_price": 13.1, "url": "https://suumo.jp/chintai/jnc_000103316702/?bc=100476588908", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 0.8, "area": 25.28, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.4, "source": "SUUMO", "status": "active", "title": "CREAL\u9580\u524d\u4ef2\u753aII", "total_price": 13.2, "url": "https://suumo.jp/chintai/jnc_000102914572/?bc=100476547293", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 0.8, "area": 25.36, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "CREAL\u9580\u524d\u4ef2\u753aII", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000101682456/?bc=100462072260", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6927\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6935\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.0, "area": 25.51, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6771\u967d\u753a\u99c5", "price": 10.0, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30f3\u30c9\u30fb\u30ac\u30fc\u30e9\u6728\u5834", "total_price": 11.0, "url": "https://suumo.jp/chintai/jnc_000102654802/?bc=100474928143", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b699\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u68ee\u4e0b\u99c5 \u6b6917\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff11", "admin_fee": 1.5, "area": 26.35, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30ec\u30b8\u30c7\u30f3\u30b9\u9580\u524d\u4ef2\u753a\u30b9\u30af\u30a8\u30a2", "total_price": 14.0, "url": "https://suumo.jp/chintai/jnc_000101412419/?bc=100462072463", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.81, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799324/?bc=100472628005", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799329/?bc=100472518505", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799328/?bc=100472587451", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799325/?bc=100472587520", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799326/?bc=100472718864", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u65b0\u5bcc\u753a\u99c5 \u6b694\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u65e5\u6bd4\u8c37\u7dda/\u7bc9\u5730\u99c5 \u6b699\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u516b\u4e01\u5800\u99c5 \u6b699\u5206", "address": "\u6771\u4eac\u90fd\u4e2d\u592e\u533a\u6e4a\uff13", "admin_fee": 1.0, "area": 25.0, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u65b0\u5bcc\u753a\u99c5", "price": 12.9, "source": "SUUMO", "status": "active", "title": "CREAL\u65b0\u5bcc\u753a", "total_price": 13.9, "url": "https://suumo.jp/chintai/jnc_000102422882/?bc=100470907457", "walk_minutes": 4, "walking_distance_actual": null}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda \u9580\u524d\u4ef2\u753a\u99c5 12\u968e\u5efa \u7bc95\u5e74", "total_price": 13.7, "url": "https://suumo.jp/chintai/jnc_000101753288/?bc=100471469276", "walk_minutes": 5, "walking_distance_actual": 8.0}];
-
-        // Initialize
-        if (allProperties) {
-            populateStations(allProperties);
-            updateFilterLabels();
-            filterProperties();
-        }
-
+        // DOM Elements
         const priceSlider = document.getElementById('price-max');
         const areaSlider = document.getElementById('area-min');
         const walkSlider = document.getElementById('walk-max');
-        const stationSelect = document.getElementById('station-select');
         const showEndedCheck = document.getElementById('show-ended');
         const sortSelect = document.getElementById('sort-select');
 
@@ -449,6 +666,38 @@
         const priceVal = document.getElementById('price-val');
         const areaVal = document.getElementById('area-val');
         const walkVal = document.getElementById('walk-val');
+
+        // Mobile Menu
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const mobileBtn = document.getElementById('mobile-filter-btn');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        mobileBtn.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
+
+        // Data injected by Flask/Jinja2
+        const allProperties = [{"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u6708\u5cf6\u99c5 \u6b6913\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "JPnoie\u9580\u524d\u4ef2\u753a", "total_price": 13.7, "url": "https://suumo.jp/chintai/jnc_000101728841/?bc=100462643918", "walk_minutes": 5, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u6708\u5cf6\u99c5 \u6b6913\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "JPnoie\u9580\u524d\u4ef2\u753a", "total_price": 14.2, "url": "https://suumo.jp/chintai/jnc_000102386381/?bc=100469147728", "walk_minutes": 5, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6928\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.5, "area": 25.33, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.9, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30b7\u30a2\u3000\u30d7\u30ec\u30a4\u30b9\u3000\u6771\u967d\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000101952938/?bc=100468821401", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6928\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.5, "area": 25.59, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 12.0, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30b7\u30a2\u3000\u30d7\u30ec\u30a4\u30b9\u3000\u6771\u967d\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000101186098/?bc=100461127225", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6c34\u5929\u5bae\u524d\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 1.0, "area": 25.66, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.15, "source": "SUUMO", "status": "active", "title": "SYFORME MONZEN-NAKACHO", "total_price": 13.15, "url": "https://suumo.jp/chintai/jnc_000102324194/?bc=100469198510", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6c34\u5929\u5bae\u524d\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 1.0, "area": 28.2, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.4, "source": "SUUMO", "status": "active", "title": "SYFORME MONZEN-NAKACHO", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102799302/?bc=100472566335", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6c34\u5929\u5bae\u524d\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 2.0, "area": 28.2, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "SYFORME MONZEN-NAKACHO", "total_price": 15.0, "url": "https://suumo.jp/chintai/jnc_000100680855/?bc=100468190935", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.2, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102932465/?bc=100476474719", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.3, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000103057491/?bc=100474615774", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.3, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000103294444/?bc=100476486571", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.3, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000103306973/?bc=100476504787", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b696\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u68ee\u4e0b\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6911\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u68ee\u4e0b\uff13", "admin_fee": 0.0, "area": 25.37, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u83ca\u5ddd\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30b7\u30c6\u30a3\u30d5\u30a9\u30ec\u30b9\u30c8\u68ee\u4e0b", "total_price": 12.5, "url": "https://suumo.jp/chintai/jnc_000100496259/?bc=100468564787", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b696\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u68ee\u4e0b\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6911\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u68ee\u4e0b\uff13", "admin_fee": 0.0, "area": 25.37, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u83ca\u5ddd\u99c5", "price": 12.7, "source": "SUUMO", "status": "active", "title": "\u30b7\u30c6\u30a3\u30d5\u30a9\u30ec\u30b9\u30c8\u68ee\u4e0b", "total_price": 12.7, "url": "https://suumo.jp/chintai/jnc_000100496262/?bc=100473686378", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6913\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b6917\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u5e73\u91ce\uff12", "admin_fee": 0.6, "area": 32.3, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6e05\u6f84\u767d\u6cb3\u99c5", "price": 12.0, "source": "SUUMO", "status": "active", "title": "\u30b3\u30b9\u30e2\u30b0\u30e9\u30b7\u30a2\u6e05\u6f84\u767d\u6cb3", "total_price": 12.6, "url": "https://suumo.jp/chintai/jnc_000102679114/?bc=100471753683", "walk_minutes": 6, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.25, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000102853961/?bc=100473442804", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.2, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000100594758/?bc=100452784176", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.25, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 14.0, "url": "https://suumo.jp/chintai/jnc_000101601917/?bc=100462119919", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6915\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 1.5, "area": 25.3, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 11.9, "source": "SUUMO", "status": "active", "title": "\u30af\u30aa\u30ea\u30bf\u30b9\u9580\u524d\u4ef2\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102493229/?bc=100470110799", "walk_minutes": 7, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b693\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u68ee\u4e0b\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u767d\u6cb3\uff12", "admin_fee": 0.5, "area": 27.0, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6e05\u6f84\u767d\u6cb3\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "\u30b3\u30f3\u30dd\u30b8\u30c3\u30c8\u6e05\u6f84\u30a4\u30fc\u30b9\u30c8", "total_price": 13.1, "url": "https://suumo.jp/chintai/jnc_000103324262/?bc=100476530915", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b692\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u68ee\u4e0b\u99c5 \u6b6910\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b6910\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u767d\u6cb3\uff12", "admin_fee": 0.5, "area": 27.0, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6e05\u6f84\u767d\u6cb3\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "\u30b3\u30f3\u30dd\u30b8\u30c3\u30c8\u6e05\u6f84\u30a4\u30fc\u30b9\u30c8", "total_price": 13.1, "url": "https://suumo.jp/chintai/jnc_000103316702/?bc=100476583257", "walk_minutes": 2, "walking_distance_actual": 3.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 0.8, "area": 25.28, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.4, "source": "SUUMO", "status": "active", "title": "CREAL\u9580\u524d\u4ef2\u753aII", "total_price": 13.2, "url": "https://suumo.jp/chintai/jnc_000102914572/?bc=100476305427", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 0.8, "area": 25.36, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "CREAL\u9580\u524d\u4ef2\u753aII", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000101682456/?bc=100462154515", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 1.3, "area": 25.36, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "CREAL\u9580\u524d\u4ef2\u753aII", "total_price": 13.9, "url": "https://suumo.jp/chintai/jnc_000102159495/?bc=100467068858", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b692\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b697\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u767d\u6cb3\uff12", "admin_fee": 0.5, "area": 27.0, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6e05\u6f84\u767d\u6cb3\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda \u6e05\u6f84\u767d\u6cb3\u99c5 4\u968e\u5efa \u7bc93\u5e74", "total_price": 13.1, "url": "https://suumo.jp/chintai/jnc_000103316703/?bc=100476566008", "walk_minutes": 2, "walking_distance_actual": 2.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b699\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff11", "admin_fee": 1.5, "area": 26.35, "last_updated": "2025-12-06 10:59:08", "layout": "2K", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30ec\u30b8\u30c7\u30f3\u30b9\u9580\u524d\u4ef2\u753a\u30b9\u30af\u30a8\u30a2", "total_price": 14.0, "url": "https://suumo.jp/chintai/jnc_000101412419/?bc=100459361092", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b699\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u68ee\u4e0b\u99c5 \u6b6917\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff11", "admin_fee": 1.5, "area": 26.35, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.7, "source": "SUUMO", "status": "active", "title": "\u30ec\u30b8\u30c7\u30f3\u30b9\u9580\u524d\u4ef2\u753a\u30b9\u30af\u30a8\u30a2", "total_price": 14.2, "url": "https://suumo.jp/chintai/jnc_000102056001/?bc=100459774937", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b699\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u68ee\u4e0b\u99c5 \u6b6917\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff11", "admin_fee": 1.5, "area": 26.35, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.9, "source": "SUUMO", "status": "active", "title": "\u30ec\u30b8\u30c7\u30f3\u30b9\u9580\u524d\u4ef2\u753a\u30b9\u30af\u30a8\u30a2", "total_price": 14.4, "url": "https://suumo.jp/chintai/jnc_000101425398/?bc=100461788082", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u65b0\u5bcc\u753a\u99c5 \u6b694\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u65e5\u6bd4\u8c37\u7dda/\u7bc9\u5730\u99c5 \u6b697\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u516b\u4e01\u5800\u99c5 \u6b699\u5206", "address": "\u6771\u4eac\u90fd\u4e2d\u592e\u533a\u6e4a\uff13", "admin_fee": 1.0, "area": 25.0, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u65b0\u5bcc\u753a\u99c5", "price": 12.9, "source": "SUUMO", "status": "active", "title": "\u30af\u30ea\u30a2\u30eb\u65b0\u5bcc\u753a", "total_price": 13.9, "url": "https://suumo.jp/chintai/jnc_000102422882/?bc=100472170690", "walk_minutes": 4, "walking_distance_actual": 4.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda \u9580\u524d\u4ef2\u753a\u99c5 12\u968e\u5efa \u7bc95\u5e74", "total_price": 13.7, "url": "https://suumo.jp/chintai/jnc_000101753288/?bc=100463405840", "walk_minutes": 5, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 0.9, "area": 25.43, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 10.6, "source": "SUUMO", "status": "active", "title": "\u30ac\u30fc\u30e9\u30fb\u30a2\u30f4\u30a7\u30cb\u30e5\u30fc\u6728\u5834", "total_price": 11.5, "url": "https://suumo.jp/chintai/jnc_000103306959/?bc=100476506118", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 0.9, "area": 25.43, "last_updated": "2025-12-06 10:59:08", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "\u30ac\u30fc\u30e9\u30fb\u30a2\u30f4\u30a7\u30cb\u30e5\u30fc\u6728\u5834", "total_price": 12.4, "url": "https://suumo.jp/chintai/jnc_000102777219/?bc=100473692046", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6927\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.0, "area": 25.51, "last_updated": "2025-12-06 10:59:08", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 10.0, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30f3\u30c9\u30fb\u30ac\u30fc\u30e9\u6728\u5834", "total_price": 11.0, "url": "https://suumo.jp/chintai/jnc_000102654802/?bc=100475041167", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6927\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6935\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.0, "area": 25.51, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6771\u967d\u753a\u99c5", "price": 10.0, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30f3\u30c9\u30fb\u30ac\u30fc\u30e9\u6728\u5834", "total_price": 11.0, "url": "https://suumo.jp/chintai/jnc_000103324265/?bc=100475791245", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6927\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6935\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 0.9, "area": 25.51, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6771\u967d\u753a\u99c5", "price": 10.4, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30f3\u30c9\u30fb\u30ac\u30fc\u30e9\u6728\u5834", "total_price": 11.3, "url": "https://suumo.jp/chintai/jnc_000102948114/?bc=100473826565", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.0, "area": 25.76, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.75, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 12.75, "url": "https://suumo.jp/chintai/jnc_000083376058/?bc=100460733317", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6926\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.81, "last_updated": "2025-12-06 10:59:08", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799324/?bc=100472749694", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6926\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799329/?bc=100472580365", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6926\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799328/?bc=100472749675", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6926\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 10:59:08", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799325/?bc=100472518516", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6926\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 10:59:08", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799326/?bc=100476328002", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 0.9, "area": 25.43, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "\u30ac\u30fc\u30e9\u30fb\u30a2\u30f4\u30a7\u30cb\u30e5\u30fc\u6728\u5834", "total_price": 12.4, "url": "https://suumo.jp/chintai/jnc_000102777219/?bc=100473700204", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u6708\u5cf6\u99c5 \u6b6913\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "JPnoie\u9580\u524d\u4ef2\u753a", "total_price": 13.7, "url": "https://suumo.jp/chintai/jnc_000101728841/?bc=100472670797", "walk_minutes": 5, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u6708\u5cf6\u99c5 \u6b6913\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "JPnoie\u9580\u524d\u4ef2\u753a", "total_price": 14.2, "url": "https://suumo.jp/chintai/jnc_000102386381/?bc=100469145901", "walk_minutes": 5, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6928\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.5, "area": 25.59, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.9, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30b7\u30a2\u3000\u30d7\u30ec\u30a4\u30b9\u3000\u6771\u967d\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000101952938/?bc=100465077182", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 1.0, "area": 25.66, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.15, "source": "SUUMO", "status": "active", "title": "SYFORME\u3000MONZEN-NAKACHO", "total_price": 13.15, "url": "https://suumo.jp/chintai/jnc_000102324194/?bc=100468587113", "walk_minutes": 5, "walking_distance_actual": 1.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 1.0, "area": 28.2, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.4, "source": "SUUMO", "status": "active", "title": "SYFORME\u3000MONZEN-NAKACHO", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102799302/?bc=100472620432", "walk_minutes": 5, "walking_distance_actual": 1.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6910\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6c38\u4ee3\uff12", "admin_fee": 2.0, "area": 28.2, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "SYFORME\u3000MONZEN-NAKACHO", "total_price": 15.0, "url": "https://suumo.jp/chintai/jnc_000100680855/?bc=100468280314", "walk_minutes": 5, "walking_distance_actual": 1.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.2, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102932465/?bc=100474063571", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.3, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000103057491/?bc=100474664362", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b6918\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff12", "admin_fee": 1.2, "area": 22.17, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.3, "source": "SUUMO", "status": "active", "title": "\u30a8\u30b9\u30dd\u30ef\u30fc\u30eb\u9580\u524d\u4ef2\u753a", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000103294444/?bc=100476488231", "walk_minutes": 5, "walking_distance_actual": 6.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u68ee\u4e0b\u99c5 \u6b696\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b697\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u68ee\u4e0b\uff13", "admin_fee": 0.0, "area": 25.37, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u68ee\u4e0b\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30b7\u30c6\u30a3\u30d5\u30a9\u30ec\u30b9\u30c8\u68ee\u4e0b", "total_price": 12.5, "url": "https://suumo.jp/chintai/jnc_000100496259/?bc=100459907615", "walk_minutes": 6, "walking_distance_actual": 6.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u68ee\u4e0b\u99c5 \u6b696\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b697\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u68ee\u4e0b\uff13", "admin_fee": 0.0, "area": 25.37, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u68ee\u4e0b\u99c5", "price": 12.7, "source": "SUUMO", "status": "active", "title": "\u30b7\u30c6\u30a3\u30d5\u30a9\u30ec\u30b9\u30c8\u68ee\u4e0b", "total_price": 12.7, "url": "https://suumo.jp/chintai/jnc_000100496262/?bc=100466140395", "walk_minutes": 6, "walking_distance_actual": 6.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b697\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.25, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000102853961/?bc=100476327852", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b697\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.2, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 13.5, "url": "https://suumo.jp/chintai/jnc_000100594758/?bc=100471114629", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b693\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b697\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b6920\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff13", "admin_fee": 1.0, "area": 25.25, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 13.0, "source": "SUUMO", "status": "active", "title": "\u30a2\u30fc\u30d0\u30cd\u30c3\u30af\u30b9\u6df1\u5ddd\u6728\u5834", "total_price": 14.0, "url": "https://suumo.jp/chintai/jnc_000101601917/?bc=100461272174", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6915\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 1.5, "area": 25.3, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 11.9, "source": "SUUMO", "status": "active", "title": "\u30af\u30aa\u30ea\u30bf\u30b9\u9580\u524d\u4ef2\u753a", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000102493229/?bc=100470109385", "walk_minutes": 7, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b693\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u83ca\u5ddd\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u68ee\u4e0b\u99c5 \u6b6912\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u767d\u6cb3\uff12", "admin_fee": 0.5, "area": 27.0, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6e05\u6f84\u767d\u6cb3\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "\u30b3\u30f3\u30dd\u30b8\u30c3\u30c8\u6e05\u6f84\u30a4\u30fc\u30b9\u30c8", "total_price": 13.1, "url": "https://suumo.jp/chintai/jnc_000103316702/?bc=100476588908", "walk_minutes": 3, "walking_distance_actual": 3.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 0.8, "area": 25.28, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.4, "source": "SUUMO", "status": "active", "title": "CREAL\u9580\u524d\u4ef2\u753aII", "total_price": 13.2, "url": "https://suumo.jp/chintai/jnc_000102914572/?bc=100476547293", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b6912\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6914\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u51ac\u6728", "admin_fee": 0.8, "area": 25.36, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.6, "source": "SUUMO", "status": "active", "title": "CREAL\u9580\u524d\u4ef2\u753aII", "total_price": 13.4, "url": "https://suumo.jp/chintai/jnc_000101682456/?bc=100462072260", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b696\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6927\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b6935\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.0, "area": 25.51, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6771\u967d\u753a\u99c5", "price": 10.0, "source": "SUUMO", "status": "active", "title": "\u30b0\u30e9\u30f3\u30c9\u30fb\u30ac\u30fc\u30e9\u6728\u5834", "total_price": 11.0, "url": "https://suumo.jp/chintai/jnc_000102654802/?bc=100474928143", "walk_minutes": 6, "walking_distance_actual": 7.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b696\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u534a\u8535\u9580\u7dda/\u6e05\u6f84\u767d\u6cb3\u99c5 \u6b699\u5206\n\u90fd\u55b6\u65b0\u5bbf\u7dda/\u68ee\u4e0b\u99c5 \u6b6917\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6df1\u5ddd\uff11", "admin_fee": 1.5, "area": 26.35, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u30ec\u30b8\u30c7\u30f3\u30b9\u9580\u524d\u4ef2\u753a\u30b9\u30af\u30a8\u30a2", "total_price": 14.0, "url": "https://suumo.jp/chintai/jnc_000101412419/?bc=100462072463", "walk_minutes": 6, "walking_distance_actual": 9.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.81, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799324/?bc=100472628005", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 12:02:00", "layout": "2K", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799329/?bc=100472518505", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799328/?bc=100472587451", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799325/?bc=100472587520", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6728\u5834\u99c5 \u6b697\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u6771\u967d\u753a\u99c5 \u6b698\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u6f6e\u898b\u99c5 \u6b6925\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u6771\u967d\uff11", "admin_fee": 1.5, "area": 25.76, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u6728\u5834\u99c5", "price": 11.5, "source": "SUUMO", "status": "active", "title": "GENOVIA\u6728\u5834II", "total_price": 13.0, "url": "https://suumo.jp/chintai/jnc_000102799326/?bc=100472718864", "walk_minutes": 7, "walking_distance_actual": 8.0}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6709\u697d\u753a\u7dda/\u65b0\u5bcc\u753a\u99c5 \u6b694\u5206\n\u6771\u4eac\u30e1\u30c8\u30ed\u65e5\u6bd4\u8c37\u7dda/\u7bc9\u5730\u99c5 \u6b699\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u516b\u4e01\u5800\u99c5 \u6b699\u5206", "address": "\u6771\u4eac\u90fd\u4e2d\u592e\u533a\u6e4a\uff13", "admin_fee": 1.0, "area": 25.0, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u65b0\u5bcc\u753a\u99c5", "price": 12.9, "source": "SUUMO", "status": "active", "title": "CREAL\u65b0\u5bcc\u753a", "total_price": 13.9, "url": "https://suumo.jp/chintai/jnc_000102422882/?bc=100470907457", "walk_minutes": 4, "walking_distance_actual": null}, {"access": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206\n\uff2a\uff32\u4eac\u8449\u7dda/\u8d8a\u4e2d\u5cf6\u99c5 \u6b693\u5206\n\u90fd\u55b6\u5927\u6c5f\u6238\u7dda/\u9580\u524d\u4ef2\u753a\u99c5 \u6b695\u5206", "address": "\u6771\u4eac\u90fd\u6c5f\u6771\u533a\u53e4\u77f3\u5834\uff11", "admin_fee": 1.2, "area": 25.15, "last_updated": "2025-12-06 12:02:00", "layout": "1DK", "nearest_station": "\u9580\u524d\u4ef2\u753a\u99c5", "price": 12.5, "source": "SUUMO", "status": "active", "title": "\u6771\u4eac\u30e1\u30c8\u30ed\u6771\u897f\u7dda \u9580\u524d\u4ef2\u753a\u99c5 12\u968e\u5efa \u7bc95\u5e74", "total_price": 13.7, "url": "https://suumo.jp/chintai/jnc_000101753288/?bc=100471469276", "walk_minutes": 5, "walking_distance_actual": 8.0}] || [];
+        console.log("Loaded properties:", allProperties);
+
+        // Initialize
+        try {
+            if (Array.isArray(allProperties) && allProperties.length > 0) {
+                populateStations(allProperties);
+                updateFilterLabels();
+                filterProperties();
+            } else {
+                console.warn("No properties found or invalid data format.");
+                renderProperties([]);
+            }
+        } catch (e) {
+            console.error("Initialization error:", e);
+            document.getElementById('grid').innerHTML = `<div style="color:red; padding:2rem;">Error: ${e.message}</div>`;
+        }
 
         function updateFilterLabels() {
             priceVal.textContent = `${priceSlider.value}万円`;
@@ -462,32 +711,94 @@
                 if (p.nearest_station) stations.add(p.nearest_station);
             });
             const sortedStations = Array.from(stations).sort();
+
+            const container = document.getElementById('station-checkboxes');
+            container.innerHTML = '';
+
+            // Select All Checkbox
+            const allLabel = document.createElement('label');
+            allLabel.style.display = 'flex';
+            allLabel.style.alignItems = 'center';
+            allLabel.style.gap = '0.5rem';
+            allLabel.style.marginBottom = '0.5rem';
+            allLabel.style.paddingBottom = '0.5rem';
+            allLabel.style.borderBottom = '1px solid var(--border)';
+            allLabel.style.fontSize = '0.9rem';
+            allLabel.style.fontWeight = 'bold';
+            allLabel.style.cursor = 'pointer';
+
+            const allCheckbox = document.createElement('input');
+            allCheckbox.type = 'checkbox';
+            allCheckbox.id = 'select-all-stations';
+
+            allLabel.appendChild(allCheckbox);
+            allLabel.appendChild(document.createTextNode('すべて選択 / 解除'));
+            container.appendChild(allLabel);
+
+            const stationCheckboxes = [];
+
             sortedStations.forEach(s => {
-                const option = document.createElement('option');
-                option.value = s;
-                option.textContent = s;
-                stationSelect.appendChild(option);
+                const label = document.createElement('label');
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '0.5rem';
+                label.style.marginBottom = '0.25rem';
+                label.style.fontSize = '0.9rem';
+                label.style.cursor = 'pointer';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = s;
+                checkbox.className = 'station-checkbox';
+                checkbox.addEventListener('change', () => {
+                    filterProperties();
+                    updateSelectAllState();
+                });
+
+                stationCheckboxes.push(checkbox);
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(s));
+                container.appendChild(label);
             });
+
+            // Select All Logic
+            allCheckbox.addEventListener('change', (e) => {
+                const checked = e.target.checked;
+                stationCheckboxes.forEach(cb => {
+                    cb.checked = checked;
+                });
+                filterProperties();
+            });
+
+            function updateSelectAllState() {
+                const allChecked = stationCheckboxes.every(cb => cb.checked);
+                const someChecked = stationCheckboxes.some(cb => cb.checked);
+                allCheckbox.checked = allChecked;
+                allCheckbox.indeterminate = someChecked && !allChecked;
+            }
         }
 
         priceSlider.addEventListener('input', () => { updateFilterLabels(); filterProperties(); });
         areaSlider.addEventListener('input', () => { updateFilterLabels(); filterProperties(); });
         walkSlider.addEventListener('input', () => { updateFilterLabels(); filterProperties(); });
-        stationSelect.addEventListener('change', filterProperties);
         showEndedCheck.addEventListener('change', filterProperties);
 
         function filterProperties() {
             const maxPrice = parseFloat(priceSlider.value);
             const minArea = parseFloat(areaSlider.value);
             const maxWalk = parseFloat(walkSlider.value);
-            const selectedStation = stationSelect.value;
+
+            // Get selected stations
+            const checkedStations = Array.from(document.querySelectorAll('.station-checkbox:checked')).map(cb => cb.value);
+
             const showEnded = showEndedCheck.checked;
             const sortMode = sortSelect.value;
 
             let filtered = allProperties.filter(p => {
                 const totalPrice = parseFloat(p.total_price) || parseFloat(p.price) || 0;
                 const area = parseFloat(p.area) || 0;
-                const walk = parseFloat(p.walk_minutes) || 99;
+                // Use actual walking distance if available, otherwise stated walk minutes
+                const walk = parseFloat(p.walking_distance_actual) || parseFloat(p.walk_minutes) || 99;
                 const status = p.status || 'active'; // default active
 
                 // Status Filter
@@ -498,8 +809,8 @@
                 if (area < minArea) return false;
                 if (walk > maxWalk) return false;
 
-                // Station Filter
-                if (selectedStation && p.nearest_station !== selectedStation) return false;
+                // Station Filter (Multi-select)
+                if (checkedStations.length > 0 && !checkedStations.includes(p.nearest_station)) return false;
 
                 return true;
             });
@@ -541,7 +852,7 @@
             countSpan.textContent = properties.length;
 
             if (properties.length === 0) {
-                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:4rem; color:var(--text-sub);">条件に合う物件が見つかりませんでした。</div>';
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:4rem; color:var(--text-sub); display:flex; flex-direction:column; align-items:center; gap:1rem;"><div style="font-size:3rem;">🔍</div><div>条件に合う物件が見つかりませんでした。<br>条件を緩めて再検索してください。</div></div>';
                 return;
             }
 
@@ -554,58 +865,64 @@
                 let statusBadge = '';
                 if (status === 'ended') {
                     statusBadge = '<span class="card-status status-ended">掲載終了</span>';
+                } else {
+                    statusBadge = '<span class="card-status status-active">募集中</span>';
                 }
 
                 const card = document.createElement('div');
                 card.className = 'card';
-                if (status === 'ended') card.style.opacity = '0.7';
+                if (status === 'ended') card.style.opacity = '0.75';
+
+                // Safe access to properties
+                const title = p.title || 'No Title';
+                const source = p.source || 'Unknown';
+                const layout = p.layout || '-';
+                const area = p.area || '-';
+                const station = p.nearest_station || '-';
+                const walk = p.walk_minutes ? p.walk_minutes + '分' : '-';
+                const realWalk = p.walking_distance_actual ? p.walking_distance_actual + '分' : '未計算';
+                const realWalkColor = p.walking_distance_actual ? 'var(--primary)' : 'var(--text-sub)';
+                const address = p.address || '-';
+                const lastUpdated = p.last_updated ? p.last_updated.split(' ')[0] : '-';
 
                 card.innerHTML = `
                     ${statusBadge}
                     <div class="card-body">
-                        <div style="display:flex; justify-content:space-between; align-items:start;">
-                            <h4 class="card-title" title="${p.title}">${p.title}</h4>
-                            <span style="font-size:0.7rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:var(--text-sub); white-space:nowrap; margin-left:8px;">${p.source || 'Unknown'}</span>
-                        </div>
+                        <div class="card-source">${source}</div>
+                        <h4 class="card-title" title="${title}">${title}</h4>
                         
                         <div class="price-section">
-                            <span class="total-price">${total.toFixed(1)}<span style="font-size:0.6em">万円</span></span>
+                            <span class="total-price">${total.toFixed(1)}<span class="price-unit">万円</span></span>
                             <span class="price-breakdown">
-                                (賃料 ${price}万 + 管理 ${admin}万)
+                                (賃料 ${price} + 管理 ${admin})
                             </span>
                         </div>
 
                         <div class="info-grid">
                             <div class="info-item">
-                                <span class="info-label">間取り</span>
-                                <span class="info-value">${p.layout}</span>
+                                <span class="info-label">間取り / 面積</span>
+                                <span class="info-value">${layout} / ${area}m²</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">面積</span>
-                                <span class="info-value">${p.area}m²</span>
+                                <span class="info-label">最寄駅</span>
+                                <span class="info-value">${station}</span>
                             </div>
                             <div class="info-item">
-                                <span class="info-label">駅</span>
-                                <span class="info-value">${p.nearest_station || '-'}</span>
+                                <span class="info-label">駅徒歩 (公称)</span>
+                                <span class="info-value">${walk}</span>
                             </div>
-                            <div class="info-item">
-                                <span class="info-label">駅徒歩</span>
-                                <span class="info-value">${p.walk_minutes ? p.walk_minutes + '分' : '-'}</span>
-                            </div>
-                            <div class="info-item" style="grid-column: 1 / -1; margin-top:4px;">
-                                <span class="info-label">Google Maps 実徒歩</span>
-                                <span class="info-value" style="color:var(--primary); font-weight:700;">
-                                    ${p.walking_distance_actual ? p.walking_distance_actual + '分' : '<span style="color:var(--text-sub); font-weight:400; font-size:0.8em;">未計算</span>'}
-                                </span>
+                            <div class="info-item" style="background:var(--primary-light);">
+                                <span class="info-label" style="color:var(--primary-dark);">Google Maps 実徒歩</span>
+                                <span class="info-value" style="color:var(--primary-dark);">${realWalk}</span>
                             </div>
                         </div>
 
                         <div class="address">
-                            📍 ${p.address}
+                            📍 ${address}
                         </div>
                     </div>
                     <div class="card-footer">
-                        <span class="last-updated">更新日: ${p.last_updated ? p.last_updated.split(' ')[0] : '-'}</span>
+                        <span class="last-updated">更新: ${lastUpdated}</span>
                         <a href="${p.url}" target="_blank" class="btn-link">詳細を見る</a>
                     </div>
                 `;
