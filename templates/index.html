@@ -309,11 +309,16 @@
 
         @media (max-width: 768px) {
             .sort-select {
-                top: 0.75rem;
-                right: 1rem;
-                padding: 0.5rem 2rem 0.5rem 1rem;
-                font-size: 0.8rem;
-                background-position: right 0.5rem center;
+                top: 12px;
+                right: 12px;
+                padding: 0.4rem 1.8rem 0.4rem 0.8rem;
+                font-size: 0.75rem;
+                background-position: right 0.4rem center;
+                max-width: 140px;
+                /* Prevent it from being too wide */
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                overflow: hidden;
             }
 
             .header {
@@ -829,115 +834,184 @@
                 return true;
             });
 
-            // Sorting
-            filtered.sort((a, b) => {
+            // Grouping
+            const grouped = groupProperties(filtered);
+
+            // Sorting Groups
+            grouped.sort((a, b) => {
                 if (sortMode === 'newest') {
-                    return (b.last_updated || '').localeCompare(a.last_updated || '');
+                    return (b.latestUpdate || '').localeCompare(a.latestUpdate || '');
                 } else if (sortMode === 'price_asc') {
-                    const pa = parseFloat(a.total_price) || 0;
-                    const pb = parseFloat(b.total_price) || 0;
-                    return pa - pb;
+                    return a.minPrice - b.minPrice;
                 } else if (sortMode === 'price_desc') {
-                    const pa = parseFloat(a.total_price) || 0;
-                    const pb = parseFloat(b.total_price) || 0;
-                    return pb - pa;
+                    return b.maxPrice - a.maxPrice;
                 } else if (sortMode === 'area_desc') {
-                    const aa = parseFloat(a.area) || 0;
-                    const ab = parseFloat(b.area) || 0;
-                    return ab - aa;
+                    return b.maxArea - a.maxArea;
                 } else if (sortMode === 'walk_asc') {
-                    const wa = parseFloat(a.walk_minutes) || 99;
-                    const wb = parseFloat(b.walk_minutes) || 99;
-                    return wa - wb;
+                    return a.minWalk - b.minWalk;
                 } else if (sortMode === 'real_walk_asc') {
-                    const wa = parseFloat(a.walking_distance_actual) || 99;
-                    const wb = parseFloat(b.walking_distance_actual) || 99;
-                    return wa - wb;
+                    return a.minRealWalk - b.minRealWalk;
                 }
                 return 0;
             });
 
-            renderProperties(filtered);
+            renderGroups(grouped);
         }
 
-        function renderProperties(properties) {
+        function groupProperties(properties) {
+            const groups = {};
+            properties.forEach(p => {
+                const title = p.title || 'Unknown';
+                if (!groups[title]) {
+                    groups[title] = {
+                        title: title,
+                        items: [],
+                        minPrice: Infinity,
+                        maxPrice: -Infinity,
+                        minArea: Infinity,
+                        maxArea: -Infinity,
+                        minWalk: Infinity,
+                        minRealWalk: Infinity,
+                        latestUpdate: '',
+                        stations: new Set(),
+                        address: p.address || '-',
+                        source: p.source || 'Unknown'
+                    };
+                }
+                const g = groups[title];
+                g.items.push(p);
+
+                // Aggregation
+                const price = parseFloat(p.total_price) || parseFloat(p.price) || 0;
+                const area = parseFloat(p.area) || 0;
+                const walk = parseFloat(p.walk_minutes) || 99;
+                const realWalk = parseFloat(p.walking_distance_actual) || 99;
+                const updated = p.last_updated || '';
+
+                if (price < g.minPrice) g.minPrice = price;
+                if (price > g.maxPrice) g.maxPrice = price;
+                if (area < g.minArea) g.minArea = area;
+                if (area > g.maxArea) g.maxArea = area;
+                if (walk < g.minWalk) g.minWalk = walk;
+                if (realWalk < g.minRealWalk) g.minRealWalk = realWalk;
+                if (updated > g.latestUpdate) g.latestUpdate = updated;
+                if (p.nearest_station) g.stations.add(p.nearest_station);
+            });
+
+            return Object.values(groups);
+        }
+
+        function renderGroups(groups) {
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
-            countSpan.textContent = properties.length;
 
-            if (properties.length === 0) {
+            // Count total units
+            const totalUnits = groups.reduce((sum, g) => sum + g.items.length, 0);
+            countSpan.textContent = totalUnits;
+
+            if (groups.length === 0) {
                 grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:4rem; color:var(--text-sub); display:flex; flex-direction:column; align-items:center; gap:1rem;"><div style="font-size:3rem;">🔍</div><div>条件に合う物件が見つかりませんでした。<br>条件を緩めて再検索してください。</div></div>';
                 return;
             }
 
-            properties.forEach(p => {
-                const price = parseFloat(p.price);
-                const admin = parseFloat(p.admin_fee);
-                const total = parseFloat(p.total_price) || price;
-
-                const status = p.status || 'active';
-                let statusBadge = '';
-                if (status === 'ended') {
-                    statusBadge = '<span class="card-status status-ended">掲載終了</span>';
-                } else {
-                    statusBadge = '<span class="card-status status-active">募集中</span>';
-                }
-
+            groups.forEach(g => {
                 const card = document.createElement('div');
                 card.className = 'card';
-                if (status === 'ended') card.style.opacity = '0.75';
 
-                // Safe access to properties
-                const title = p.title || 'No Title';
-                const source = p.source || 'Unknown';
-                const layout = p.layout || '-';
-                const area = p.area || '-';
-                const station = p.nearest_station || '-';
-                const walk = p.walk_minutes ? p.walk_minutes + '分' : '-';
-                const realWalk = p.walking_distance_actual ? p.walking_distance_actual + '分' : '未計算';
-                const realWalkColor = p.walking_distance_actual ? 'var(--primary)' : 'var(--text-sub)';
-                const address = p.address || '-';
-                const lastUpdated = p.last_updated ? p.last_updated.split(' ')[0] : '-';
+                // Status check (if all ended, show ended)
+                const allEnded = g.items.every(i => i.status === 'ended');
+                let statusBadge = '';
+                if (allEnded) {
+                    statusBadge = '<span class="card-status status-ended">掲載終了</span>';
+                    card.style.opacity = '0.75';
+                } else {
+                    const activeCount = g.items.filter(i => i.status !== 'ended').length;
+                    statusBadge = `<span class="card-status status-active">${activeCount}件 募集中</span>`;
+                }
+
+                // Format Ranges
+                const priceDisplay = g.minPrice === g.maxPrice
+                    ? `${g.minPrice.toFixed(1)}`
+                    : `${g.minPrice.toFixed(1)} ~ ${g.maxPrice.toFixed(1)}`;
+
+                const areaDisplay = g.minArea === g.maxArea
+                    ? `${g.minArea}m²`
+                    : `${g.minArea} ~ ${g.maxArea}m²`;
+
+                const stationDisplay = Array.from(g.stations).join(', ');
+                const walkDisplay = g.minWalk === 99 ? '-' : `${g.minWalk}分`;
+                const realWalkDisplay = g.minRealWalk === 99 ? '未計算' : `${g.minRealWalk}分`;
+                const lastUpdated = g.latestUpdate ? g.latestUpdate.split(' ')[0] : '-';
+
+                // Items HTML
+                const itemsHtml = g.items.map(p => {
+                    const pPrice = parseFloat(p.total_price) || parseFloat(p.price);
+                    const pAdmin = parseFloat(p.admin_fee);
+                    const pLayout = p.layout || '-';
+                    const pArea = p.area || '-';
+                    const pUrl = p.url;
+                    const pStatus = p.status === 'ended' ? '<span style="color:var(--danger);font-size:0.7rem;">[終了]</span>' : '';
+
+                    return `
+                        <a href="${pUrl}" target="_blank" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border-bottom:1px solid var(--border); text-decoration:none; color:inherit; transition:background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                            <div style="display:flex; flex-direction:column; gap:2px;">
+                                <div style="font-weight:700; font-size:0.95rem;">${pLayout} / ${pArea}m² ${pStatus}</div>
+                                <div style="font-size:0.8rem; color:var(--text-sub);">${p.floor ? p.floor + '階' : ''}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-weight:700; color:var(--primary); font-family:'Outfit';">${pPrice.toFixed(1)}万円</div>
+                                <div style="font-size:0.75rem; color:var(--text-sub);">管理 ${pAdmin}</div>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
 
                 card.innerHTML = `
                     ${statusBadge}
                     <div class="card-body">
-                        <div class="card-source">${source}</div>
-                        <h4 class="card-title" title="${title}">${title}</h4>
+                        <div class="card-source">${g.source}</div>
+                        <h4 class="card-title" title="${g.title}">${g.title}</h4>
                         
                         <div class="price-section">
-                            <span class="total-price">${total.toFixed(1)}<span class="price-unit">万円</span></span>
-                            <span class="price-breakdown">
-                                (賃料 ${price} + 管理 ${admin})
-                            </span>
+                            <span class="total-price">${priceDisplay}<span class="price-unit">万円</span></span>
                         </div>
 
                         <div class="info-grid">
                             <div class="info-item">
-                                <span class="info-label">間取り / 面積</span>
-                                <span class="info-value">${layout} / ${area}m²</span>
+                                <span class="info-label">面積</span>
+                                <span class="info-value">${areaDisplay}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">最寄駅</span>
-                                <span class="info-value">${station}</span>
+                                <span class="info-value" style="font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${stationDisplay}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">駅徒歩 (公称)</span>
-                                <span class="info-value">${walk}</span>
+                                <span class="info-value">${walkDisplay}</span>
                             </div>
                             <div class="info-item" style="background:var(--primary-light);">
                                 <span class="info-label" style="color:var(--primary-dark);">Google Maps 実徒歩</span>
-                                <span class="info-value" style="color:var(--primary-dark);">${realWalk}</span>
+                                <span class="info-value" style="color:var(--primary-dark);">${realWalkDisplay}</span>
                             </div>
                         </div>
 
                         <div class="address">
-                            📍 ${address}
+                            📍 ${g.address}
                         </div>
                     </div>
+                    
+                    <!-- Expandable Section -->
+                    <div style="border-top:1px solid var(--border);">
+                        <button onclick="this.parentElement.querySelector('.group-items').style.display = this.parentElement.querySelector('.group-items').style.display === 'none' ? 'block' : 'none'; this.textContent = this.textContent.includes('表示') ? '閉じる' : '${g.items.length}件を表示';" style="width:100%; padding:0.75rem; background:none; border:none; color:var(--primary); font-weight:700; cursor:pointer; font-size:0.9rem;">
+                            ${g.items.length}件を表示
+                        </button>
+                        <div class="group-items" style="display:none; background:#f8fafc;">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+
                     <div class="card-footer">
-                        <span class="last-updated">更新: ${lastUpdated}</span>
-                        <a href="${p.url}" target="_blank" class="btn-link">詳細を見る</a>
+                        <span class="last-updated">最終更新: ${lastUpdated}</span>
                     </div>
                 `;
                 grid.appendChild(card);
