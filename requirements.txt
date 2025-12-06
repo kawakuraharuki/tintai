@@ -1,0 +1,10 @@
+requests
+beautifulsoup4
+sqlalchemy
+pandas
+playwright
+playwright-stealth
+playwright
+flask
+googlemaps
+python-dotenv

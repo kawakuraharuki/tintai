@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物件検索 | プレミアムビュー</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --success: #10b981;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 2rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-section h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-sub);
+            margin-bottom: 1rem;
+        }
+
+        .filter-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--border);
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type=checkbox]:checked+.toggle-switch {
+            background: var(--primary);
+        }
+
+        input[type=checkbox]:checked+.toggle-switch::after {
+            transform: translateX(20px);
+        }
+
+        input[type=checkbox] {
+            display: none;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .sort-select {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            font-family: inherit;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        .stats {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+        }
+
+        .stats strong {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        /* Grid */
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border: 1px solid transparent;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary);
+        }
+
+        .card-status {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            z-index: 10;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-ended {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-new {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .price-section {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .total-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .price-breakdown {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-bottom: 2px;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .address {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: auto;
+        }
+
+        .card-footer {
+            padding: 1rem 1.5rem;
+            background: #f1f5f9;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .last-updated {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+        }
+
+        .btn-link {
+            background: var(--text-main);
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .btn-link:hover {
+            background: var(--primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                height: auto;
+                position: static;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                🏠 不動産ファインダー
+            </div>
+
+            <div class="filter-section">
+                <h3>絞り込み条件</h3>
+
+                <div class="filter-group">
+                    <label>
+                        最大総賃料
+                        <span id="price-val" style="color:var(--primary); font-weight:700;"></span>
+                    </label>
+                    <input type="range" id="price-max" min="0" max="30" step="0.5" value="15">
+                    <div
+                        style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-sub); margin-top:4px;">
+                        <span>0万円</span>
+                        <span>30万円+</span>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>
+                        最小面積
+                        <span id="area-val" style="color:var(--primary); font-weight:700;"></span>
+                    </label>
+                    <input type="range" id="area-min" min="0" max="60" step="1" value="20">
+                    <div
+                        style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-sub); margin-top:4px;">
+                        <span>0m²</span>
+                        <span>60m²+</span>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>
+                        駅徒歩（最大）
+                        <span id="walk-val" style="color:var(--primary); font-weight:700;"></span>
+                    </label>
+                    <input type="range" id="walk-max" min="1" max="20" step="1" value="10">
+                    <div
+                        style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-sub); margin-top:4px;">
+                        <span>1分</span>
+                        <span>20分+</span>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>駅</label>
+                    <select id="station-select"
+                        style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--border);">
+                        <option value="">すべての駅</option>
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="toggle-container">
+                        <input type="checkbox" id="show-ended">
+                        <div class="toggle-switch"></div>
+                        <span style="font-weight:normal;">掲載終了物件を表示</span>
+                    </label>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="header">
+                <div class="stats">
+                    <strong id="count">0</strong> 件の物件を表示中
+                </div>
+                <select id="sort-select" class="sort-select" onchange="filterProperties()">
+                    <option value="newest">新着順</option>
+                    <option value="price_asc">価格: 安い順</option>
+                    <option value="price_desc">価格: 高い順</option>
+                    <option value="area_desc">面積: 広い順</option>
+                    <option value="walk_asc">駅徒歩: 近い順</option>
+                    <option value="real_walk_asc">実徒歩: 近い順</option>
+                </select>
+            </div>
+
+            <div id="grid" class="property-grid">
+                <!-- Cards injected via JS -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let allProperties = [];
+
+        // Fetch data
+        fetch('/api/properties')
+            .then(response => response.json())
+            .then(data => {
+                allProperties = data;
+                populateStations(data);
+                // Initial render
+                updateFilterLabels();
+                filterProperties();
+            });
+
+        const priceSlider = document.getElementById('price-max');
+        const areaSlider = document.getElementById('area-min');
+        const walkSlider = document.getElementById('walk-max');
+        const stationSelect = document.getElementById('station-select');
+        const showEndedCheck = document.getElementById('show-ended');
+        const sortSelect = document.getElementById('sort-select');
+
+        const countSpan = document.getElementById('count');
+        const priceVal = document.getElementById('price-val');
+        const areaVal = document.getElementById('area-val');
+        const walkVal = document.getElementById('walk-val');
+
+        function updateFilterLabels() {
+            priceVal.textContent = `${priceSlider.value}万円`;
+            areaVal.textContent = `${areaSlider.value}m²`;
+            walkVal.textContent = `${walkSlider.value}分`;
+        }
+
+        function populateStations(data) {
+            const stations = new Set();
+            data.forEach(p => {
+                if (p.nearest_station) stations.add(p.nearest_station);
+            });
+            const sortedStations = Array.from(stations).sort();
+            sortedStations.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s;
+                option.textContent = s;
+                stationSelect.appendChild(option);
+            });
+        }
+
+        priceSlider.addEventListener('input', () => { updateFilterLabels(); filterProperties(); });
+        areaSlider.addEventListener('input', () => { updateFilterLabels(); filterProperties(); });
+        walkSlider.addEventListener('input', () => { updateFilterLabels(); filterProperties(); });
+        stationSelect.addEventListener('change', filterProperties);
+        showEndedCheck.addEventListener('change', filterProperties);
+
+        function filterProperties() {
+            const maxPrice = parseFloat(priceSlider.value);
+            const minArea = parseFloat(areaSlider.value);
+            const maxWalk = parseFloat(walkSlider.value);
+            const selectedStation = stationSelect.value;
+            const showEnded = showEndedCheck.checked;
+            const sortMode = sortSelect.value;
+
+            let filtered = allProperties.filter(p => {
+                const totalPrice = parseFloat(p.total_price) || parseFloat(p.price) || 0;
+                const area = parseFloat(p.area) || 0;
+                const walk = parseFloat(p.walk_minutes) || 99;
+                const status = p.status || 'active'; // default active
+
+                // Status Filter
+                if (!showEnded && status === 'ended') return false;
+
+                // Range Filters
+                if (totalPrice > maxPrice) return false;
+                if (area < minArea) return false;
+                if (walk > maxWalk) return false;
+
+                // Station Filter
+                if (selectedStation && p.nearest_station !== selectedStation) return false;
+
+                return true;
+            });
+
+            // Sorting
+            filtered.sort((a, b) => {
+                if (sortMode === 'newest') {
+                    return (b.last_updated || '').localeCompare(a.last_updated || '');
+                } else if (sortMode === 'price_asc') {
+                    const pa = parseFloat(a.total_price) || 0;
+                    const pb = parseFloat(b.total_price) || 0;
+                    return pa - pb;
+                } else if (sortMode === 'price_desc') {
+                    const pa = parseFloat(a.total_price) || 0;
+                    const pb = parseFloat(b.total_price) || 0;
+                    return pb - pa;
+                } else if (sortMode === 'area_desc') {
+                    const aa = parseFloat(a.area) || 0;
+                    const ab = parseFloat(b.area) || 0;
+                    return ab - aa;
+                } else if (sortMode === 'walk_asc') {
+                    const wa = parseFloat(a.walk_minutes) || 99;
+                    const wb = parseFloat(b.walk_minutes) || 99;
+                    return wa - wb;
+                } else if (sortMode === 'real_walk_asc') {
+                    const wa = parseFloat(a.walking_distance_actual) || 99;
+                    const wb = parseFloat(b.walking_distance_actual) || 99;
+                    return wa - wb;
+                }
+                return 0;
+            });
+
+            renderProperties(filtered);
+        }
+
+        function renderProperties(properties) {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            countSpan.textContent = properties.length;
+
+            if (properties.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:4rem; color:var(--text-sub);">条件に合う物件が見つかりませんでした。</div>';
+                return;
+            }
+
+            properties.forEach(p => {
+                const price = parseFloat(p.price);
+                const admin = parseFloat(p.admin_fee);
+                const total = parseFloat(p.total_price) || price;
+
+                const status = p.status || 'active';
+                let statusBadge = '';
+                if (status === 'ended') {
+                    statusBadge = '<span class="card-status status-ended">掲載終了</span>';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                if (status === 'ended') card.style.opacity = '0.7';
+
+                card.innerHTML = `
+                    ${statusBadge}
+                    <div class="card-body">
+                        <div style="display:flex; justify-content:space-between; align-items:start;">
+                            <h4 class="card-title" title="${p.title}">${p.title}</h4>
+                            <span style="font-size:0.7rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:var(--text-sub); white-space:nowrap; margin-left:8px;">${p.source || 'Unknown'}</span>
+                        </div>
+                        
+                        <div class="price-section">
+                            <span class="total-price">${total.toFixed(1)}<span style="font-size:0.6em">万円</span></span>
+                            <span class="price-breakdown">
+                                (賃料 ${price}万 + 管理 ${admin}万)
+                            </span>
+                        </div>
+
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">間取り</span>
+                                <span class="info-value">${p.layout}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">面積</span>
+                                <span class="info-value">${p.area}m²</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">駅</span>
+                                <span class="info-value">${p.nearest_station || '-'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">駅徒歩</span>
+                                <span class="info-value">${p.walk_minutes ? p.walk_minutes + '分' : '-'}</span>
+                            </div>
+                            <div class="info-item" style="grid-column: 1 / -1; margin-top:4px;">
+                                <span class="info-label">Google Maps 実徒歩</span>
+                                <span class="info-value" style="color:var(--primary); font-weight:700;">
+                                    ${p.walking_distance_actual ? p.walking_distance_actual + '分' : '<span style="color:var(--text-sub); font-weight:400; font-size:0.8em;">未計算</span>'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="address">
+                            📍 ${p.address}
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <span class="last-updated">更新日: ${p.last_updated ? p.last_updated.split(' ')[0] : '-'}</span>
+                        <a href="${p.url}" target="_blank" class="btn-link">詳細を見る</a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+
+</html>
