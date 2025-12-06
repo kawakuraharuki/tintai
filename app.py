@@ -11,7 +11,8 @@ log.setLevel(logging.ERROR)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    properties = csv_manager.get_all_properties()
+    return render_template('index.html', properties=properties)
 
 @app.route('/api/properties')
 def get_properties():

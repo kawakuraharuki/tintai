@@ -252,8 +252,29 @@ def main():
             print(f"  URL: {p.get('url')}")
             print(f"  Updated: {p.get('last_updated')}")
 
+    # Generate static HTML for Netlify
+    if args.scrape:
+        generate_html(csv_manager)
+
     if not args.scrape and not args.show:
         parser.print_help()
+
+def generate_html(csv_manager):
+    """Generates a static index.html from the CSV data."""
+    try:
+        from jinja2 import Environment, FileSystemLoader
+        env = Environment(loader=FileSystemLoader('templates'))
+        template = env.get_template('index.html')
+        
+        properties = csv_manager.get_all_properties()
+        html_content = template.render(properties=properties)
+        
+        with open('index.html', 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        
+        logger.info(f"Generated static index.html with {len(properties)} properties.")
+    except Exception as e:
+        logger.error(f"Failed to generate HTML: {e}")
 
 if __name__ == "__main__":
     main()

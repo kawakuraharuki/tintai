@@ -428,18 +428,15 @@
     </div>
 
     <script>
-        let allProperties = [];
+        // Data injected by Flask/Jinja2
+        const allProperties = {{ properties | tojson }};
 
-        // Fetch data
-        fetch('/api/properties')
-            .then(response => response.json())
-            .then(data => {
-                allProperties = data;
-                populateStations(data);
-                // Initial render
-                updateFilterLabels();
-                filterProperties();
-            });
+        // Initialize
+        if (allProperties) {
+            populateStations(allProperties);
+            updateFilterLabels();
+            filterProperties();
+        }
 
         const priceSlider = document.getElementById('price-max');
         const areaSlider = document.getElementById('area-min');
