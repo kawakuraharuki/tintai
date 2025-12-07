@@ -701,7 +701,9 @@
 
         // Data injected by Flask/Jinja2
         const allProperties = {{ properties | tojson }} || [];
+        const priorityStations = {{ priority_stations | tojson }} || [];
         console.log("Loaded properties:", allProperties);
+        console.log("Priority stations:", priorityStations);
 
         // Initialize
         try {
@@ -729,7 +731,17 @@
             data.forEach(p => {
                 if (p.nearest_station) stations.add(p.nearest_station);
             });
-            const sortedStations = Array.from(stations).sort();
+
+            // Sort stations: Priority list first, then alphabetical
+            const sortedStations = Array.from(stations).sort((a, b) => {
+                const idxA = priorityStations.indexOf(a);
+                const idxB = priorityStations.indexOf(b);
+
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB; // Both in priority
+                if (idxA !== -1) return -1; // A is priority
+                if (idxB !== -1) return 1;  // B is priority
+                return a.localeCompare(b); // Neither, sort alphabetical
+            });
 
             const container = document.getElementById('station-checkboxes');
             container.innerHTML = '';
@@ -760,24 +772,19 @@
                 const label = document.createElement('label');
                 label.style.display = 'flex';
                 label.style.alignItems = 'center';
-                label.style.gap = '0.5rem';
-                label.style.marginBottom = '0.25rem';
-                label.style.fontSize = '0.9rem';
-                label.style.cursor = 'pointer';
+                const isChecked = priorityStations.includes(s) ? 'checked' : '';
 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = s;
-                checkbox.className = 'station-checkbox';
-                checkbox.addEventListener('change', () => {
-                    filterProperties();
-                    updateSelectAllState();
-                });
-
+                const div = document.createElement('div');
+                div.className = 'station-item';
+                div.innerHTML = `
+                    <label style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem; font-size:0.9rem; cursor:pointer;">
+                        <input type="checkbox" class="station-checkbox" value="${s}" ${isChecked} onchange="filterProperties(); updateSelectAllState();">
+                        ${s}
+                    </label>
+                `;
+                const checkbox = div.querySelector('.station-checkbox');
                 stationCheckboxes.push(checkbox);
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(s));
-                container.appendChild(label);
+                container.appendChild(div);
             });
 
             // Select All Logic
@@ -834,8 +841,8 @@
                 } else {
                     // Default: Only show allowed stations if no specific filter is selected
                     // This ensures we hide old data that doesn't match the new criteria
-                    const allowedStations = ["門前仲町駅", "月島駅", "豊洲駅", "清澄白河駅", "新富町駅"];
-                    if (!allowedStations.includes(p.nearest_station)) return false;
+                    // Use priorityStations (from JSON) as the allowed list
+                    if (priorityStations.length > 0 && !priorityStations.includes(p.nearest_station)) return false;
                 }
 
                 return true;

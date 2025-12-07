@@ -263,11 +263,24 @@ def generate_html(csv_manager):
     """Generates a static index.html from the CSV data."""
     try:
         from jinja2 import Environment, FileSystemLoader
+        import json
+        import os
+        
         env = Environment(loader=FileSystemLoader('templates'))
         template = env.get_template('index.html')
         
+        # Load priority stations
+        priority_stations = []
+        try:
+            json_path = os.path.join(os.path.dirname(__file__), "search_conditions.json")
+            with open(json_path, "r", encoding="utf-8") as f:
+                conditions = json.load(f)
+                priority_stations = conditions.get("stations", [])
+        except Exception as e:
+            logger.warning(f"Could not load priority stations: {e}")
+
         properties = csv_manager.get_all_properties()
-        html_content = template.render(properties=properties)
+        html_content = template.render(properties=properties, priority_stations=priority_stations)
         
         with open('index.html', 'w', encoding='utf-8') as f:
             f.write(html_content)
