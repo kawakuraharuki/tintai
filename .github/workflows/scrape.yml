@@ -6,6 +6,10 @@ on:
     - cron: '0 3 * * *'
   workflow_dispatch: # Allow manual trigger
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -45,5 +49,7 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Update properties data [skip ci]"
+            # Pull latest changes to avoid conflicts
+            git pull --rebase origin main || git pull --rebase origin master
             git push
           fi
