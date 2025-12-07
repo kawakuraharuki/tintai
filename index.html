@@ -829,7 +829,14 @@
                 if (walk > maxWalk) return false;
 
                 // Station Filter (Multi-select)
-                if (checkedStations.length > 0 && !checkedStations.includes(p.nearest_station)) return false;
+                if (checkedStations.length > 0) {
+                    if (!checkedStations.includes(p.nearest_station)) return false;
+                } else {
+                    // Default: Only show allowed stations if no specific filter is selected
+                    // This ensures we hide old data that doesn't match the new criteria
+                    const allowedStations = ["門前仲町駅", "月島駅", "豊洲駅", "清澄白河駅", "新富町駅"];
+                    if (!allowedStations.includes(p.nearest_station)) return false;
+                }
 
                 return true;
             });
