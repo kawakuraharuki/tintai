@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -41,6 +43,10 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
           
+          # Ensure we are on main and up to date
+          git checkout main
+          git pull origin main
+          
           # Add files if they exist
           git add properties.csv route_cache.json index.html || true
           
@@ -49,7 +55,5 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Update properties data [skip ci]"
-            # Pull latest changes to avoid conflicts
-            git pull --rebase origin main || git pull --rebase origin master
-            git push
+            git push origin main
           fi
