@@ -72,26 +72,33 @@ class SuumoScraper(BaseScraper):
             else: et = "9999999"
             params["et"] = et
 
-        # Construct URL
+        # Construct Base URL
         query_string = urllib.parse.urlencode(params, doseq=True)
-        target_url = f"{self.base_url}?{query_string}"
+        base_target_url = f"{self.base_url}?{query_string}"
         
-        logger.info(f"Fetching {target_url}")
-        html = self.fetch_page(target_url)
-        if not html:
-            return []
+        all_properties = []
+        page = 1
+        
+        while True:
+            target_url = f"{base_target_url}&pn={page}"
+            logger.info(f"Fetching page {page}: {target_url}")
+            
+            html = self.fetch_page(target_url)
+            if not html:
+                break
 
-        properties = self.parse_html(html)
+            properties = self.parse_html(html)
+            if not properties:
+                logger.info(f"No properties found on page {page}. Stopping.")
+                break
+            
+            all_properties.extend(properties)
+            logger.info(f"Found {len(properties)} properties on page {page}. Total: {len(all_properties)}")
+            
+            page += 1
+            time.sleep(self.delay)
         
-        # Post-filtering for Stations (Client-side handled in main.py usually, but if logic is here...)
-        # In main.py we do the filtering. Here we just return scraped properties.
-        # But wait, the previous code had a block for "station" filtering here too?
-        # Let's check the original code block I'm replacing.
-        # The original code had:
-        # if "station" in conditions and conditions["station"]: ...
-        # I should update that too if I replace it.
-        
-        return properties
+        return all_properties
 
     def parse_html(self, html_content: str) -> List[Dict[str, Any]]:
         soup = BeautifulSoup(html_content, 'html.parser')
